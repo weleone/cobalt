@@ -1,0 +1,7 @@
+# cobalt 前端静态站点的 Caddy 配置
+:80 {
+	root * /srv
+	# SvelteKit adapter-static 的 SPA fallback（404.html 是应用壳）
+	try_files {path} {path}/ /404.html
+	file_server
+}

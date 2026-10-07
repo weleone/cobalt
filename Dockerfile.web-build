@@ -1,0 +1,47 @@
+# cobalt Web 前端构建（只构建，不含 nginx）
+#
+# 构建产物是纯静态文件，用 --output 直接导出到宿主机目录，
+# 再由 Lucky 的 Web服务 -> 静态文件服务 托管。
+#
+# 用法（在 cobalt 源码根目录执行）：
+#   docker buildx build -f Dockerfile.web-build \
+#     --build-arg WEB_DEFAULT_API="http://192.168.0.3:9009/" \
+#     --output type=local,dest=/mnt/sdb1/docker/config/cobalt/web-dist \
+#     .
+#
+# 注意：
+# - WEB_DEFAULT_API 是构建时变量，写的是浏览器能访问到的 API 地址；
+#   API 地址变了必须重新构建。
+# - 需要 buildx（docker buildx build），普通 docker build 不支持 --output。
+
+FROM node:24-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+FROM base AS build
+WORKDIR /app
+COPY . /app
+
+RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
+RUN apk add --no-cache python3 alpine-sdk
+
+# 构建时 API 地址（必填）
+ARG WEB_DEFAULT_API
+ARG WEB_HOST=""
+ENV WEB_DEFAULT_API=${WEB_DEFAULT_API} \
+    WEB_HOST=${WEB_HOST}
+
+RUN if [ -z "$WEB_DEFAULT_API" ]; then \
+      echo "ERROR: 必须通过 --build-arg WEB_DEFAULT_API=... 传入 API 地址" >&2; \
+      exit 1; \
+    fi
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+RUN pnpm --filter @imput/cobalt-web build
+
+# 导出阶段：--output type=local 只导出最后这个 stage 的文件系统
+FROM scratch AS export
+COPY --from=build /app/web/build /

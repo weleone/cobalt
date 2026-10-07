@@ -1,0 +1,44 @@
+# cobalt Web 前端镜像（caddy 提供静态文件服务）
+#
+# 用法（在 cobalt 源码根目录执行）：
+#   docker build -f Dockerfile.web \
+#     --build-arg WEB_DEFAULT_API="http://192.168.0.3:9009/" \
+#     -t cobalt-web:latest .
+# 或直接用 compose：docker compose up -d --build
+#
+# 注意：WEB_DEFAULT_API 是构建时变量，写的是浏览器能访问到的 API 地址，
+# API 地址变了必须重新构建。
+
+FROM node:24-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
+
+FROM base AS build
+WORKDIR /app
+COPY . /app
+
+RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
+RUN apk add --no-cache python3 alpine-sdk
+
+# 构建时 API 地址（必填）
+ARG WEB_DEFAULT_API
+ARG WEB_HOST=""
+ENV WEB_DEFAULT_API=${WEB_DEFAULT_API} \
+    WEB_HOST=${WEB_HOST}
+
+RUN if [ -z "$WEB_DEFAULT_API" ]; then \
+      echo "ERROR: 必须通过 --build-arg WEB_DEFAULT_API=... 传入 API 地址" >&2; \
+      exit 1; \
+    fi
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+RUN pnpm --filter @imput/cobalt-web build
+
+FROM caddy:alpine AS web
+COPY --from=build /app/web/build /srv
+COPY Caddyfile /etc/caddy/Caddyfile
+EXPOSE 80

@@ -1,0 +1,1 @@
+{"state.retrying":"重试中","state.running.encode":"转码中","state.running.fetch":"下载中","state.running.remux":"重新封装中","state.starting":"启动中","state.starting.encode":"开始转码","state.starting.fetch":"开始下载","state.starting.remux":"开始重新封装","state.waiting":"排队中","stub":"这里还什么都没有，就我们俩。\\n试着下载点东西吧！","title":"处理队列"}

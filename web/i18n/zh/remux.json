@@ -1,0 +1,1 @@
+{"bullet.explainer.description":"重新封装是把已有的编码数据原样拷到新的媒体容器里，无损，媒体数据不会被重新编码。","bullet.explainer.title":"怎么工作的？","bullet.privacy.description":"cobalt 在本地做重新封装，文件不会离开你的设备，所以处理几乎是即时的。","bullet.privacy.title":"本机处理","bullet.purpose.description":"重新封装能修复文件容器的问题，比如缺失的时间信息，还能提高和老软件（比如 vegas pro、windows media player）的兼容性。","bullet.purpose.title":"重新封装是干嘛的？"}
